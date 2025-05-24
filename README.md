@@ -213,3 +213,112 @@ bash cifar100-training-demo/docker/train.bash resnet18_baseline
 最終，這個模型在第 186 個 epoch 時，test-set 的準確率達到了 44.26%。
 
 但 train-set 的準確率已經達到了 100％，這就是典型的過擬合現象。
+
+## 調整訓練超參數
+
+所謂的「過擬合」，就是模型把訓練資料背得滾瓜爛熟，卻沒辦法能套用在其他資料上。
+
+在 CIFAR-100 這類小型資料集上，這種現象尤其常見，因為類別多、樣本少，模型很容易記住細節而不是學習規則。
+
+### 常見的解法有幾個
+
+1. **減少模型容量**：改用較小的模型，減少過度擬合的風險。
+2. **資料增強（Data Augmentation）**：隨機裁切、翻轉、亮度調整，讓模型看更多圖，增加泛化能力。
+3. **正則化（Regularization）**：使用 Dropout、Weight Decay 等手法，讓模型在學習時保持「克制」。
+4. **提早停止（Early Stopping）**：當驗證集準確率不再上升時，提早結束訓練，避免過度擬合。
+5. **使用預訓練模型（Pretrained Model）**：若允許，可以從大型資料集（如 ImageNet）微調過來，而非從頭訓練。
+6. **學習率與 Batch Size 調整**：學習率太高或太低都會導致模型不穩，batch size 也會影響梯度更新穩定性。
+
+---
+
+Early Stopping 的部分我們就不討論了，反正固定跑 200 個 epoch，然後挑最高分數來報告。
+
+資料增強是個常見的技巧，接著我們先來試試看。
+
+## 資料增強模型：Acc=36.48%
+
+我們來試試看使用資料增強的方式來改善模型的泛化能力。
+
+這裡我們引入 `albumentations` 這個資料增強庫，加入一些基本的資料增強操作。
+
+```python
+import albumentations as A
+
+class DefaultImageAug:
+
+    def __init__(self, p=0.5):
+        self.aug = A.OneOf([
+            A.ShiftScaleRotate(),
+            A.CoarseDropout(),
+            A.ColorJitter(),
+            A.HorizontalFlip(),
+            A.VerticalFlip(),
+        ], p=p)
+
+    def __call__(self, img: np.ndarray):
+        img = self.aug(image=img)['image']
+        return img
+```
+
+這邊選用的增強方法包括：
+
+- **ShiftScaleRotate**：隨機平移、縮放和旋轉影像。
+- **CoarseDropout**：隨機遮罩影像的一部分，模擬資料缺失。
+- **ColorJitter**：隨機調整影像的亮度、對比度和飽和度。
+- **HorizontalFlip**：隨機水平翻轉影像。
+- **VerticalFlip**：隨機垂直翻轉影像。
+
+經驗上，這些增強方法能有效提升模型的泛化能力。
+
+接著，我們在 `config/resnet18_augment.yaml` 中加入這個增強方法：
+
+```yaml
+dataset:
+  train_options:
+    name: CIFAR100AugDataset
+    options:
+      mode: train
+      return_tensor: True
+      image_aug_ratio: 1.0
+  valid_options:
+    name: CIFAR100AugDataset
+    options:
+      mode: test
+      return_tensor: True
+```
+
+結果卻讓人大失所望。
+
+測試集的準確率只有 36.48%，遠低於之前的 44.26%。
+
+這是因為在 CIFAR-100 這種解析度僅有 32×32 的小圖像中，若一次套用過多高強度增強（如旋轉 ±45°、大範圍遮蔽或垂直翻轉），會嚴重破壞圖像原始語意，模型無法穩定學習基本特徵。
+
+## 強正則化：Acc=40.12%
+
+接下來，我們嘗試使用正則化的方式改善模型的泛化能力。
+
+一般來說，在訓練 CNN 模型時，由於卷積結構本身具備一定的平移不變性與參數共享特性，因此具有基本的正則化效果。相較於 Transformer 模型在訓練初期容易過擬合的特性，CNN 通常不需額外施加過強的正則化。
+
+不過，我們還是可以試試看。
+
+這裡將 `weight_decay` 提高至 0.1，觀察其對模型學習與泛化能力的影響。
+
+在 `config/resnet18_baseline_wd01.yaml` 中修改 `weight_decay` 的設定：
+
+```yaml
+optimizer:
+  name: AdamW
+  options:
+    lr: 0.001
+    betas: [0.9, 0.999]
+    weight_decay: 0.1
+    amsgrad: False
+```
+
+實驗結果如預期所示：模型在測試集上的準確率下降至 40.12%，低於原始設定的 44.26%。
+
+這反映出一個常見現象：
+
+- 對於像 CIFAR-100 這類小型資料集而言，施加過強的正則化可能會壓抑模型在訓練階段對資料分布的充分擬合，導致模型尚未學會足夠區分性的特徵就過早收斂，最終影響泛化效果。
+
+## Label Smoothing
