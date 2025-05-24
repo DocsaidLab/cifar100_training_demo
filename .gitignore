@@ -176,3 +176,11 @@ cython_debug/
 *cifar-100-python*
 
 resnet18_baseline/
+
+resnet18_augment/
+
+resnet18_baseline_wd01/
+
+resnet18_baseline_lbsmooth/
+
+resnet18_pretrained/
