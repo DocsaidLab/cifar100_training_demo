@@ -57,7 +57,7 @@ class Baseline(nn.Module):
         return self.proj(x[-1])
 
 
-class MultiMLP(nn.Module):
+class MarginHead(nn.Module):
 
     def __init__(self, in_channels_list, hid_dim, num_classes):
         super().__init__()
@@ -75,4 +75,4 @@ class MultiMLP(nn.Module):
         norm_embeddings = normalize(feat, dim=1)
         norm_weight_activated = normalize(self.weight)
         logits = linear(norm_embeddings, norm_weight_activated)
-        return logits, norm_embeddings
+        return logits

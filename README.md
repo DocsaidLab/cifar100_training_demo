@@ -183,8 +183,8 @@ bash cifar100-training-demo/docker/train.bash resnet18_baseline
 在 `config/resnet18_baseline.yaml` 中，主要配置如下：
 
 1. **Batch Size**：設為 250，能整除 50000 筆訓練資料，簡化訓練週期。
-
-2. **模型配置**
+2. **Image Size**：設定為 32，符合 CIFAR-100 的原始影像大小，如果沒有特別說明，後續實驗都會使用這個大小。
+3. **模型配置**
 
    ```yaml
    model:
@@ -204,9 +204,9 @@ bash cifar100-training-demo/docker/train.bash resnet18_baseline
    - 使用 `timm_resnet18` 不帶預訓練權重 (pretrained=False)，方便了解模型從頭學習的過程。
    - `Baseline` 負責將 backbone 輸出轉換為 100 類別預測。
 
-3. **訓練 Epoch 數**：設定為 200。經多次嘗試，超過 200 時改善幅度不明顯。
-4. **優化器**： 採用 `AdamW`，學習率（`lr`）為 0.001，整體訓練表現相對穩定。
-5. **Weight Decay**： 設為 0.0001；小型模型本身正則化不算差，可適度降低此值。
+4. **訓練 Epoch 數**：設定為 200。經多次嘗試，超過 200 時改善幅度不明顯。
+5. **優化器**： 採用 `AdamW`，學習率（`lr`）為 0.001，整體訓練表現相對穩定。
+6. **Weight Decay**： 設為 0.0001；小型模型本身正則化不算差，可適度降低此值。
 
 ---
 
@@ -367,6 +367,8 @@ loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 
 ## 預訓練權重：Acc = 56.70%
 
+延續 Baseline 的設定，暫時不使用 `label_smoothing` 或其他正則化技巧，專注於 backbone 的預訓練權重。
+
 這次我們使用 `resnet18_pretrained.yaml` 作為設定檔，主要調整的是 backbone 的部分，將 `pretrained` 選項設為 `True`，以啟用來自 ImageNet 的預訓練權重。
 
 ```yaml
@@ -386,8 +388,106 @@ model:
 
 在第 112 個 epoch 時，模型於 test set 上達到 56.70% 的準確率，相比原本的 44.26%，提升了 **12.44%**。
 
-可說是效果顯著，比剛才所有調餐的技巧都來得有用得多！
+可說是效果顯著，比剛才所有調參的技巧都來得有用得多！
 
 不過，遷移學習也非萬能。當預訓練資料與目標任務之間差異過大時，模型不僅可能無法有效遷移，甚至會產生所謂的「**負遷移（Negative Transfer）**」。例如，將影像預訓練模型應用於自然語言任務，幾乎無法發揮正面效益。
 
 但在我們這個例子中，CIFAR-100 屬於標準的影像分類任務，與 ImageNet 的語境相近，遷移學習的效果自然也表現得相當理想。
+
+## Margin Loss：Acc = 57.92%
+
+事情進展到這裡，我們解題的策略得換個方向。
+
+如果單純依靠現有的 cross-entropy 損失函數已無法進一步提升準確率，也許可以嘗試**主動增加訓練難度**，迫使模型學習更具區別性的特徵表示。而這正是 Margin Loss 所要處理的議題。
+
+### 為什麼要 Margin？
+
+在傳統分類任務中，cross-entropy 損失會鼓勵模型將正確類別的 logit 分數拉高，但**並不會強制要求它與其他錯誤類別分數之間有足夠的間距（margin）**。換句話說，只要正確答案最高就行，不管高多少。
+
+這樣的設計雖然足以完成分類任務，但在樣本分佈接近、資料雜訊大或類別間相似度高的情況下，往往會導致模型的判斷邊界模糊，泛化能力不穩定。
+
+Margin Loss 就是為了解決這個問題而設計：
+
+> **不只要對，還要對得很有把握。**
+
+### Margin Loss 是什麼？
+
+Margin Loss 的基本精神是：
+
+> **在 logit space 或特徵空間中，拉大正負樣本之間的距離，縮小同類樣本間的內部變異。**
+
+常見的 Margin Loss 包括：
+
+- **Large Margin Softmax (L-Softmax)**
+- **ArcFace / CosFace / SphereFace**
+- **Triplet Loss / Contrastive Loss**
+
+這些方法多半會在 softmax 前加入一個角度或幅度的 margin，使模型學到的 embedding 在特徵空間中有更清晰的分類界線。以下是以角度 margin 為例的概念圖：
+
+![margin_loss](./img/margin_loss.jpg)
+
+圖中可以看到，Margin Loss 會將同一類的特徵拉得更緊，類別之間的邊界拉得更遠，提升分類的信心與穩定性。
+
+### 與幾何空間的關係
+
+在實作這類損失函數時，經常會將特徵投影到單位超球面上，也就是將 embedding 向量進行 L2 normalization，並強制其分佈在半徑為 1 的球面上。
+
+這麼做有幾個好處：
+
+- **移除特徵長度的干擾，專注比較方向（角度）**
+- **便於控制 margin 對角度的影響**
+- **數學上可將分類任務轉換為角度分類問題**
+
+這也是為什麼許多基於 Margin 的方法，最後都是在 cosine similarity 的基礎上施加 margin，而非直接對 logit 值進行操作。
+
+### 實驗結果
+
+同樣使用預訓練的 ResNet-18 作為 backbone，我們在 `config/resnet18_pretrained_arcface.yaml` 中加入 Margin Loss 的設定。
+
+我們嘗試了兩個實作，`ArcFace` 和 `CosFace`，分別使用不同的 margin 設定。
+
+```python
+class ArcFace(nn.Module):
+
+    def __init__(self, s=64.0, m=0.5):
+        super(ArcFace, self).__init__()
+        self.s = s
+        self.margin = m
+        self.cos_m = math.cos(m)
+        self.sin_m = math.sin(m)
+        self.theta = math.cos(math.pi - m)
+        self.sinmm = math.sin(math.pi - m) * m
+        self.easy_margin = False
+
+    def forward(self, logits: torch.Tensor, labels: torch.Tensor):
+        index = torch.where(labels != -1)[0]
+        target_logit = logits[index, labels[index].view(-1)]
+        with torch.no_grad():
+            target_logit.arccos_()
+            logits.arccos_()
+            final_target_logit = target_logit + self.margin
+            logits[index, labels[index].view(-1)] = final_target_logit
+            logits.cos_()
+        logits = logits * self.s
+        return logits
+
+
+class CosFace(nn.Module):
+
+    def __init__(self, s=64.0, m=0.40):
+        super(CosFace, self).__init__()
+        self.s = s
+        self.m = m
+
+    def forward(self, logits: torch.Tensor, labels: torch.Tensor):
+        index = torch.where(labels != -1)[0]
+        logits[index, labels[index].view(-1)] -= self.m
+        logits *= self.s
+        return logits
+```
+
+做了幾次實驗後，發現兩者效果差異不大，但 ArcFace 的分數要略高一些。
+
+所以我們最後報告了 ArcFace 的結果：在第 199 個 epoch 時，模型於 test set 上達到 57.92% 的準確率。比起一般的 Softmax 損失，提升了 1.22%。
+
+這個結果顯示，Margin Loss 在提升模型的判別能力上確實有其價值，尤其在類別間相似度較高的情況下，能有效減少過擬合並提升泛化能力。

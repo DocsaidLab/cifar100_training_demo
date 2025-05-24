@@ -184,3 +184,5 @@ resnet18_baseline_wd01/
 resnet18_baseline_lbsmooth/
 
 resnet18_pretrained/
+
+resnet18_pretrained_cosface/
