@@ -172,3 +172,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+*cifar-100-python*
+
+resnet18_baseline/
