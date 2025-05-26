@@ -1,3 +1,5 @@
+**[中文](./README.md)** | [English](./README_en.md)
+
 # CIFAR-100 訓練範例
 
 ## 過擬合的不眠之夜
@@ -637,3 +639,22 @@ common:
 2. **輸入資料尺寸**：教師模型在 224 × 224 上訓練，而學生模型僅在 32 × 32 上學習，這樣的解析度差異可能導致學生無法充分捕捉到教師模型所學的特徵。
 
 當然可能還有其他原因，不過這是我們認為最主要的兩個。
+
+## 還有更多
+
+以上我們集中在基於 Resnet18 的實驗，並固定輸入影像大小為 32x32。
+
+但要提高資料集的準確率並非只有這些方法。事實上，在 [Paper with Code](https://paperswithcode.com/sota/image-classification-on-cifar-100) 的排行榜上，CIFAR-100 的最佳結果已經達到 96% 以上。
+
+這些模型大多結合了如下幾種策略：
+
+- 使用大型 ViT 架構或自訂設計的 CNN 網路
+- 高解析度輸入
+- 預訓練遷移學習與資料增強策略（如 RandAugment、MixUp、CutMix）
+- 更長週期的訓練，搭配 Cosine Annealing 或 One-Cycle 策略
+- 使用 Label Smoothing、Sharpness-Aware Minimization 等新式正則化技術
+- 多模型蒸餾與 ensemble 技術進行最終推論
+
+這些方法不一定適用於所有開發場景，特別是資源受限的部署環境，但它們提供了一個清楚的訊號：**性能的上限不僅來自模型本身，而是整個訓練策略的設計。**
+
+如果你也正在使用 CIFAR-100 做為訓練實驗的 playground，別忘了試試不同的架構與策略組合，持續驗證、持續精進。
