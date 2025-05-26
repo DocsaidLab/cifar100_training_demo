@@ -1,0 +1,97 @@
+common:
+  batch_size: 250
+  image_size: [224, 224]
+  is_restore: False
+  restore_ind: ""
+  restore_ckpt: ""
+  preview_batch: 1000
+
+global_settings:
+  image_size: [224, 224]
+
+trainer:
+  max_epochs: 200
+  precision: 32
+  val_check_interval: 1.0
+  gradient_clip_val: 5
+  accumulate_grad_batches: 1
+  accelerator: gpu
+  devices: [0]
+
+model:
+  name: CIFAR100ModelMargin
+  backbone:
+    name: Backbone
+    options:
+      name: timm_resnet50
+      pretrained: True
+      features_only: True
+  head:
+    name: MarginHead
+    options:
+      hid_dim: 512
+      num_classes: 100
+
+dataset:
+  train_options:
+    name: CIFAR100DatasetSimple
+    options:
+      mode: train
+      return_tensor: True
+  valid_options:
+    name: CIFAR100DatasetSimple
+    options:
+      mode: test
+      return_tensor: True
+
+dataloader:
+  train_options:
+    batch_size: -1
+    num_workers: 16
+    shuffle: False
+    drop_last: False
+  valid_options:
+    batch_size: -1
+    num_workers: 8
+    shuffle: False
+    drop_last: False
+
+optimizer:
+  name: AdamW
+  options:
+    lr: 0.001
+    betas: [0.9, 0.999]
+    weight_decay: 0.001
+    amsgrad: False
+
+lr_scheduler:
+  name: MultiStepLR
+  options:
+    milestones: [100000, 200000]
+    gamma: 0.316227766
+  pl_options:
+    monitor: loss
+    interval: step
+
+callbacks:
+  - name: ModelCheckpoint
+    options:
+      monitor: test_acc
+      mode: max
+      verbose: True
+      save_last: True
+      save_top_k: 5
+  - name: LearningRateMonitor
+    options:
+      logging_interval: step
+  - name: RichModelSummary
+    options:
+      max_depth: 3
+  - name: CustomTQDMProgressBar
+    options:
+      unit_scale: -1
+
+logger:
+  name: TensorBoardLogger
+  options:
+    save_dir: logger

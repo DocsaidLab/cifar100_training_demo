@@ -186,3 +186,7 @@ resnet18_baseline_lbsmooth/
 resnet18_pretrained/
 
 resnet18_pretrained_cosface/
+
+resnet50_pretrained_arcface/
+
+resnet50_pretrained_arcface_224x224/
