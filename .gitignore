@@ -190,3 +190,9 @@ resnet18_pretrained_cosface/
 resnet50_pretrained_arcface/
 
 resnet50_pretrained_arcface_224x224/
+
+resnet18_pretrained_arcface_kd/
+
+resnet101_pretrained_arcface/
+
+resnet18_pretrained_arcface_224x224/

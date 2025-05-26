@@ -23,7 +23,7 @@ class DefaultImageAug:
         return img
 
 
-class CIFAR100Dataset:
+class CIFAR100DatasetWithLargeImage:
 
     def __init__(
         self,
@@ -64,18 +64,18 @@ class CIFAR100Dataset:
         label = self.labels[idx]
 
         img = np.transpose(img, (1, 2, 0))
+        large_img = cb.imresize(img, (224, 224))
         img = cb.imresize(img, size=self.image_size)
-        clip_img = cb.imresize(img, (224, 224))
 
         if self.return_tensor:
             img = np.transpose(img, (2, 0, 1))  # (C, H, W)
-            clip_img = np.transpose(clip_img, (2, 0, 1))
+            large_img = np.transpose(large_img, (2, 0, 1))
             img = img.astype(np.float32) / 255.  # (3, 32, 32)
-            clip_img = clip_img.astype(np.float32) / 255.  # (3, 224, 224)
+            large_img = large_img.astype(np.float32) / 255.  # (3, 224, 224)
             label = np.array(label, dtype=np.int64)
-            return img, clip_img, label
+            return img, large_img, label
 
-        return img, clip_img, label
+        return img, large_img, label
 
 
 class CIFAR100DatasetSimple:
