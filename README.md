@@ -640,6 +640,23 @@ common:
 
 當然可能還有其他原因，不過這是我們認為最主要的兩個。
 
+## 實驗與結果總覽
+
+以下以表格方式整理各實驗設定及其最終在 CIFAR-100 測試集上的準確率：
+
+| 配置檔案                                   | 設定說明                                                         | Accuracy |
+| ------------------------------------------ | ---------------------------------------------------------------- | -------- |
+| `resnet18_baseline.yaml`                   | ResNet-18，無預訓練，AdamW (lr=0.001)，WD=0.0001                 | 44.26%   |
+| `resnet18_augment.yaml`                    | 加入 Albumentations 資料增強（旋轉、遮罩、翻轉等）               | 36.48%   |
+| `resnet18_baseline_wd01.yaml`              | ResNet-18，無預訓練，Weight Decay 設為 0.1                       | 40.12%   |
+| `resnet18_baseline_lbsmooth.yaml`          | ResNet-18，無預訓練，Label Smoothing=0.1                         | 44.81%   |
+| `resnet18_pretrained.yaml`                 | ResNet-18，**使用 ImageNet 預訓練**                              | 56.70%   |
+| `resnet18_pretrained_arcface.yaml`         | ResNet-18 預訓練 + Margin Loss (ArcFace)                         | 57.92%   |
+| `resnet18_pretrained_arcface_224x224.yaml` | ResNet-18 預訓練 + Margin Loss，輸入影像放大至 224×224           | 79.57%   |
+| `resnet50_pretrained_arcface.yaml`         | ResNet-50 預訓練 + Margin Loss，輸入影像仍為 32×32               | 61.76%   |
+| `resnet50_pretrained_arcface_224x224.yaml` | ResNet-50 預訓練 + Margin Loss，224×224 輸入                     | 81.21%   |
+| `resnet18_pretrained_arcface_kd.yaml`      | 知識蒸餾（Teacher: ResNet-50 224×224；Student: ResNet-18 32×32） | 57.37%   |
+
 ## 還有更多
 
 以上我們集中在基於 Resnet18 的實驗，並固定輸入影像大小為 32x32。

@@ -650,6 +650,23 @@ Possible reasons include:
 
 There may be other reasons, but these two are the primary hypotheses.
 
+## Summary of Experiments and Results
+
+Below is a table summarizing each experiment’s configuration and the final test accuracy on CIFAR-100:
+
+| Config File                                | Description                                                                   | Accuracy |
+| ------------------------------------------ | ----------------------------------------------------------------------------- | -------- |
+| `resnet18_baseline.yaml`                   | ResNet-18, no pretraining, AdamW (lr=0.001), WD=0.0001                        | 44.26%   |
+| `resnet18_augment.yaml`                    | Added Albumentations data augmentation (rotation, dropout, flips)             | 36.48%   |
+| `resnet18_baseline_wd01.yaml`              | ResNet-18, no pretraining, Weight Decay set to 0.1                            | 40.12%   |
+| `resnet18_baseline_lbsmooth.yaml`          | ResNet-18, no pretraining, Label Smoothing = 0.1                              | 44.81%   |
+| `resnet18_pretrained.yaml`                 | ResNet-18, **ImageNet pretrained**                                            | 56.70%   |
+| `resnet18_pretrained_arcface.yaml`         | ResNet-18 pretrained + Margin Loss (ArcFace)                                  | 57.92%   |
+| `resnet18_pretrained_arcface_224x224.yaml` | ResNet-18 pretrained + Margin Loss, input image resized to 224×224            | 79.57%   |
+| `resnet50_pretrained_arcface.yaml`         | ResNet-50 pretrained + Margin Loss, input remains 32×32                       | 61.76%   |
+| `resnet50_pretrained_arcface_224x224.yaml` | ResNet-50 pretrained + Margin Loss, input image 224×224                       | 81.21%   |
+| `resnet18_pretrained_arcface_kd.yaml`      | Knowledge Distillation (Teacher: ResNet-50 224×224; Student: ResNet-18 32×32) | 57.37%   |
+
 ## More to Explore
 
 So far, we focused on ResNet-18 experiments with fixed input size of 32×32.
