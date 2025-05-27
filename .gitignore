@@ -196,3 +196,5 @@ resnet18_pretrained_arcface_kd/
 resnet101_pretrained_arcface/
 
 resnet18_pretrained_arcface_224x224/
+
+resnet18_pretrained_arcface_mst/
