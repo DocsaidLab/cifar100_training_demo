@@ -1,41 +1,41 @@
-**[中文](./README.md)** | [English](./README_en.md)
+[中文](./README_zh.md) | **[English](./README.md)**
 
-# CIFAR-100 訓練範例
+# CIFAR-100 Training Example
 
-## 過擬合的不眠之夜
+## Sleepless Nights of Overfitting
 
-此專案提供一個簡潔的 PyTorch 訓練範例，使用 CIFAR-100 影像分類任務讓初學者可以快速上手。
+This project provides a concise PyTorch training example using the CIFAR-100 image classification task, designed to help beginners quickly get started.
 
-同時也提供了一些彈性調整與擴充的範例程式碼，讓你能更輕鬆地因應不同實驗需求。
+It also offers some flexible adjustment and extension sample code, making it easier for you to adapt to different experimental needs.
 
-話不多說，這就開始吧。
+Without further ado, let’s get started.
 
-## 下載本專案
+## Download This Project
 
-專案前期準備已完成，請直接使用下列指令取得程式碼：
+The initial preparation for the project is complete; please use the following command to obtain the code:
 
 ```bash
 git clone https://github.com/DocsaidLab/cifar100-training-demo.git
 ```
 
-## 建置訓練環境（Ubuntu 22.04/24.04）
+## Setup Training Environment (Ubuntu 22.04/24.04)
 
-> [!IMPORTANT]
+> \[!IMPORTANT]
 >
-> **為什麼使用 Docker？**
+> **Why use Docker?**
 >
-> 1. **一致性**：保證「我的電腦跑得動，你的也一樣」。
-> 2. **免汙染**：所有相依套件封裝在映像檔內，不會把你原本的 Python/conda 弄亂。
-> 3. **易重製**：出錯時 `docker rm` + `docker run` 整個環境瞬間歸零。
->    （若你對 venv/conda 更熟悉，亦可自行建環境；本專案將以 Docker 為主。）
+> 1. **Consistency**: Ensures “If it runs on my machine, it will run on yours.”
+> 2. **No Pollution**: All dependencies are packaged inside the image, avoiding messing up your existing Python/conda setup.
+> 3. **Easy Reproducibility**: When errors occur, `docker rm` + `docker run` resets the environment instantly.
+>    (If you are more familiar with venv/conda, feel free to set up your own environment; this project mainly uses Docker.)
 
-### 建置 Docker 環境
+### Build Docker Environment
 
-這個章節在我們的基礎工具箱專案中有詳細說明，請參考：
+This section is thoroughly explained in our foundational toolbox project, please refer to:
 
-- [**Docsaid Capybara #進階安裝**](https://docsaid.org/docs/capybara/advance)
+- [**Docsaid Capybara #Advanced Installation**](https://docsaid.org/docs/capybara/advance)
 
-### 下載並建置映像檔
+### Download and Build the Image
 
 ```bash
 git clone https://github.com/DocsaidLab/cifar100-training-demo.git
@@ -43,19 +43,19 @@ cd cifar100-training-demo
 bash docker/build.bash
 ```
 
-- 基底：`nvcr.io/nvidia/pytorch:25.03-py3`
-- 版本詳細資訊：[**PyTorch Release 25.03**](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-25-03.html#rel-25-03)
-- 首次建置下載量 ~20 GB，時間大約 5–20 分鐘，如果你的網速不算太慢的話。
+- Base Image: `nvcr.io/nvidia/pytorch:25.03-py3`
+- Version Details: [**PyTorch Release 25.03**](https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/rel-25-03.html#rel-25-03)
+- First build download size \~20 GB, taking about 5–20 minutes depending on your network speed.
 
-完成後可確認映像檔：
+After completion, verify the image with:
 
 ```bash
 docker images | grep cifar100_train
 ```
 
-## 建構資料集
+## Constructing the Dataset
 
-在 PyTorch 中，CIFAR-100 資料集已經內建於 `torchvision` 中，因此我們可以直接使用：
+In PyTorch, the CIFAR-100 dataset is already built into `torchvision`, so you can directly use:
 
 ```python
 from torchvision.datasets import CIFAR100
@@ -64,36 +64,36 @@ train_dataset = CIFAR100(root='data/', train=True, download=True)
 test_dataset = CIFAR100(root='data/', train=False, download=True)
 ```
 
-不過，等一下！
+But wait!
 
-既然是要練習，我們不妨試看自己下載和建構資料集，這樣可以更好地控制資料處理流程。
+Since this is a practice exercise, why not try downloading and constructing the dataset yourself to better control the data processing pipeline?
 
-首先從官方網站下載 CIFAR-100 資料集，並解壓縮：
+First, download the CIFAR-100 dataset from the official website and extract it:
 
 ```bash
-wget https://www.cs.toronto.edu/\~kriz/cifar-100-python.tar.gz
+wget https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz
 tar xvf cifar-100-python.tar.gz
 ```
 
-執行完之後，你可以在你的工作目錄中看到一個名為 `cifar-100-python` 的資料夾，裡面包含了訓練和測試資料。
+After execution, you will see a folder named `cifar-100-python` in your working directory, containing training and testing data.
 
-其中的結構大概長這樣：
+Its structure looks roughly like this:
 
 ```text
 cifar-100-python/
 ├── train
-|-- test
+├── test
 ├── meta
-|-- file.txt~
+└── file.txt~
 ```
 
-這個不是影像檔，而是已經打包成 Python 的 pickle 檔案格式。因此，我們等一下在使用的時候，需要使用 `pickle` 模組來讀取這些資料。
+These are not image files but are packaged as Python pickle files. Therefore, when using them later, you need to read these files with the `pickle` module.
 
-## 撰寫資料集
+## Writing the Dataset Class
 
-有了資料集之後，我們需要來寫一份 PyTorch 的資料集類別來讀取這些資料。
+After obtaining the dataset, we need to write a PyTorch dataset class to load this data.
 
-我們簡單實作一個 `CIFAR100DatasetSimple` 類別：
+Here, we implement a simple `CIFAR100DatasetSimple` class:
 
 ```python
 import pickle
@@ -107,11 +107,11 @@ class CIFAR100DatasetSimple:
 
     def __init__(
         self,
-        root: str=None,
-        mode: str='train',
-        image_size: int=32,
-        return_tensor: bool=False,
-        image_aug_ratio: float=0.5,
+        root: str = None,
+        mode: str = 'train',
+        image_size: int = 32,
+        return_tensor: bool = False,
+        image_aug_ratio: float = 0.5,
     ):
 
         if mode not in ['train', 'test']:
@@ -125,14 +125,14 @@ class CIFAR100DatasetSimple:
         self.image_size = image_size
         self.return_tensor = return_tensor
 
-        # 讀取資料檔案
+        # Load data files
         with open(f'{self.root}/{mode}', 'rb') as f:
             data = pickle.load(f, encoding='bytes')
             self.images = data[b'data']
             self.labels = data[b'fine_labels']
             self.filenames = data[b'filenames']
 
-        # shape: (N, 3, 32, 32)
+        # reshape: (N, 3, 32, 32)
         self.images = self.images.reshape(-1, 3, 32, 32)
 
     def __len__(self):
@@ -142,53 +142,55 @@ class CIFAR100DatasetSimple:
         img = self.images[idx]
         label = self.labels[idx]
 
-        img = np.transpose(img, (1, 2, 0)) # (C, H, W) -> (H, W, C)
+        img = np.transpose(img, (1, 2, 0))  # (C, H, W) -> (H, W, C)
         img = cb.imresize(img, size=self.image_size)
 
         if self.return_tensor:
             img = np.transpose(img, (2, 0, 1))  # (H, W, C) -> (C, H, W)
-            img = img.astype(np.float32) / 255.  # 直接簡單歸一化到 [0, 1]
+            img = img.astype(np.float32) / 255.  # simple normalization to [0, 1]
             label = np.array(label, dtype=np.int64)
             return img, label
 
         return img, label
 ```
 
-這個類別有幾個功能：
+This class offers several features:
 
-1. 可以指定輸出影像的大小（`image_size`），預設為 32。
-2. 可以選擇是否將影像轉換為 PyTorch Tensor 格式（`return_tensor`）。
-3. 可以指定資料集的模式（`mode`），分為訓練集（`train`）和測試集（`test`）。
+1. Allows specifying the output image size (`image_size`), defaulting to 32.
+2. Optionally converts images to PyTorch Tensor format (`return_tensor`).
+3. Allows setting the dataset mode (`mode`), either training (`train`) or testing (`test`).
 
-更複雜的功能等等再說，現在讓我們先來 Train 第一個 Baseline 模型吧。
+More advanced features can be added later; for now, let’s proceed to train the first baseline model.
 
-## 第一個模型：Acc=44.26%
+## First Model: Acc = 44.26%
 
-你可以在 `config` 資料夾內找到一些預設的配置檔案，我們會透過這些配置檔案來控制訓練流程。
+You can find some default config files inside the `config` folder. We will use these configs to control the training process.
 
-第一個檔案我們使用 `resnet18_baseline.yaml`，使用大家耳熟能詳的 ResNet-18 作為基礎模型。
+For the first model, we use `resnet18_baseline.yaml`, employing the well-known ResNet-18 as the base model.
 
-訓練之前，我們先退回上層目錄：
+Before training, return to the parent directory:
 
 ```bash
 cd ..
 ```
 
-接著，我們可以使用以下指令來開始訓練：
+Then, start training with the following command:
 
 ```bash
 bash cifar100-training-demo/docker/train.bash resnet18_baseline
 ```
 
-既然是第一個模型，我們可以仔細看一下參數的配置。
+Since this is the first model, let’s take a closer look at the parameter configuration.
 
-### 關鍵配置說明
+### Key Configuration Explanation
 
-在 `config/resnet18_baseline.yaml` 中，主要配置如下：
+In `config/resnet18_baseline.yaml`, the main settings are:
 
-1. **Batch Size**：設為 250，能整除 50000 筆訓練資料，簡化訓練週期。
-2. **Image Size**：設定為 32，符合 CIFAR-100 的原始影像大小，如果沒有特別說明，後續實驗都會使用這個大小。
-3. **模型配置**
+1. **Batch Size**: Set to 250, which divides evenly into the 50,000 training samples, simplifying training cycles.
+
+2. **Image Size**: Set to 32, matching the original CIFAR-100 image size. Unless otherwise specified, this size will be used in subsequent experiments.
+
+3. **Model Configuration**
 
    ```yaml
    model:
@@ -205,45 +207,47 @@ bash cifar100-training-demo/docker/train.bash resnet18_baseline
          num_classes: 100
    ```
 
-   - 使用 `timm_resnet18` 不帶預訓練權重 (pretrained=False)，方便了解模型從頭學習的過程。
-   - `Baseline` 負責將 backbone 輸出轉換為 100 類別預測。
+   - Uses `timm_resnet18` without pretrained weights (`pretrained: False`) to observe the model learning from scratch.
+   - The `Baseline` head converts the backbone output into predictions for 100 classes.
 
-4. **訓練 Epoch 數**：設定為 200。經多次嘗試，超過 200 時改善幅度不明顯。
-5. **優化器**： 採用 `AdamW`，學習率（`lr`）為 0.001，整體訓練表現相對穩定。
-6. **Weight Decay**： 設為 0.0001；小型模型本身自帶正則化，可適度降低此值。
+4. **Training Epochs**: Set to 200. Through multiple trials, improvements beyond 200 epochs are minimal.
 
----
+5. **Optimizer**: Uses `AdamW` with a learning rate (`lr`) of 0.001, providing relatively stable training performance.
 
-最終，這個模型在第 186 個 epoch 時，test-set 的準確率達到了 44.26%。
-
-但 train-set 的準確率已經達到了 100％，這就是典型的過擬合現象。
-
-## 調整訓練超參數
-
-所謂的「過擬合」，就是模型把訓練資料背得滾瓜爛熟，卻沒辦法能套用在其他資料上。
-
-在 CIFAR-100 這類小型資料集上，這種現象尤其常見，因為類別多、樣本少，模型很容易記住細節而不是學習規則。
-
-### 常見的解法有幾個
-
-1. **減少模型容量**：改用較小的模型，減少過度擬合的風險。
-2. **資料增強（Data Augmentation）**：隨機裁切、翻轉、亮度調整，讓模型看更多圖，增加泛化能力。
-3. **正則化（Regularization）**：使用 Dropout、Weight Decay 等手法，讓模型在學習時保持「克制」。
-4. **提早停止（Early Stopping）**：當驗證集準確率不再上升時，提早結束訓練，避免過度擬合。
-5. **使用預訓練模型（Pretrained Model）**：若允許，可以從大型資料集（如 ImageNet）微調過來，而非從頭訓練。
-6. **學習率與 Batch Size 調整**：學習率太高或太低都會導致模型不穩，batch size 也會影響梯度更新穩定性。
+6. **Weight Decay**: Set to 0.0001; small models naturally have some regularization, so this value can be lowered moderately.
 
 ---
 
-Early Stopping 的部分我們就不討論了，反正固定跑 200 個 epoch，然後挑最高分數來報告。
+Ultimately, this model achieved 44.26% test accuracy at epoch 186.
 
-資料增強是個常見的技巧，接著我們先來試試看。
+However, the training accuracy reached 100%, indicating classic overfitting.
 
-## 資料增強：Acc=36.48%
+## Adjusting Training Hyperparameters
 
-我們來試試看使用資料增強的方式來改善模型的泛化能力。
+Overfitting means the model memorizes the training data perfectly but fails to generalize to unseen data.
 
-這裡我們引入 `albumentations` 這個資料增強庫，加入一些基本的資料增強操作。
+This is especially common on small datasets like CIFAR-100 because of many classes and few samples; the model tends to memorize details rather than learn general rules.
+
+### Common Solutions Include
+
+1. **Reduce Model Capacity**: Use smaller models to lower the risk of overfitting.
+2. **Data Augmentation**: Random cropping, flipping, brightness adjustments, etc., to expose the model to more diverse images and enhance generalization.
+3. **Regularization**: Techniques like Dropout and Weight Decay to constrain the model during training.
+4. **Early Stopping**: Stop training early once validation accuracy plateaus to avoid overfitting.
+5. **Use Pretrained Models**: If possible, fine-tune from models pretrained on large datasets (e.g., ImageNet) rather than training from scratch.
+6. **Adjust Learning Rate and Batch Size**: Improper learning rates or batch sizes can destabilize training; tuning these can improve results.
+
+---
+
+We won’t discuss Early Stopping here; instead, we fix training at 200 epochs and report the highest accuracy achieved.
+
+Data augmentation is a common technique, so let’s try it next.
+
+## Data Augmentation: Acc = 36.48%
+
+We attempt to improve model generalization by applying data augmentation.
+
+Here, we introduce the `albumentations` library with some basic augmentations:
 
 ```python
 import albumentations as A
@@ -264,17 +268,17 @@ class DefaultImageAug:
         return img
 ```
 
-這邊選用的增強方法包括：
+The chosen augmentations include:
 
-- **ShiftScaleRotate**：隨機平移、縮放和旋轉影像。
-- **CoarseDropout**：隨機遮罩影像的一部分，模擬資料缺失。
-- **ColorJitter**：隨機調整影像的亮度、對比度和飽和度。
-- **HorizontalFlip**：隨機水平翻轉影像。
-- **VerticalFlip**：隨機垂直翻轉影像。
+- **ShiftScaleRotate**: Random shifts, scaling, and rotations.
+- **CoarseDropout**: Randomly masks parts of the image to simulate missing data.
+- **ColorJitter**: Randomly adjusts brightness, contrast, and saturation.
+- **HorizontalFlip**: Random horizontal flips.
+- **VerticalFlip**: Random vertical flips.
 
-經驗上，這些增強方法能有效提升模型的泛化能力。
+Empirically, these augmentations often improve model generalization.
 
-接著，我們在 `config/resnet18_augment.yaml` 中加入這個增強方法：
+Next, we add this augmentation in `config/resnet18_augment.yaml`:
 
 ```yaml
 dataset:
@@ -291,23 +295,23 @@ dataset:
       return_tensor: True
 ```
 
-結果卻讓人大失所望。
+The result, however, was disappointing.
 
-測試集的準確率只有 36.48%，遠低於之前的 44.26%。
+Test accuracy dropped to 36.48%, much lower than the previous 44.26%.
 
-這是因為在 CIFAR-100 這種解析度僅有 32×32 的小圖像中，若一次套用過多高強度增強（如旋轉 ±45°、大範圍遮蔽或垂直翻轉），會嚴重破壞圖像原始語意，模型無法穩定學習基本特徵。
+This happens because on CIFAR-100’s small 32×32 images, applying strong augmentations at once (e.g., ±45° rotation, large occlusion, or vertical flipping) severely distorts the original semantics, preventing the model from stably learning basic features.
 
-## 強正則化：Acc=40.12%
+## Strong Regularization: Acc = 40.12%
 
-接下來，我們嘗試使用正則化的方式改善模型的泛化能力。
+Next, we try to improve the model’s generalization by applying stronger regularization.
 
-一般來說，在訓練 CNN 模型時，由於卷積結構本身具備一定的平移不變性與參數共享特性，因此具有基本的正則化效果。相較於 Transformer 模型在訓練初期容易過擬合的特性，CNN 通常不需額外施加過強的正則化。
+Generally, when training CNN models, the convolutional structure itself provides some translation invariance and parameter sharing, which acts as inherent regularization. Compared to Transformer models that tend to overfit easily in early training, CNNs usually do not require overly strong regularization.
 
-不過，我們還是可以試試看。
+Still, we give it a try.
 
-這裡將 `weight_decay` 提高至 0.1，觀察其對模型學習與泛化能力的影響。
+Here, we increase the `weight_decay` to 0.1 to observe its effect on model learning and generalization.
 
-在 `config/resnet18_baseline_wd01.yaml` 中修改 `weight_decay` 的設定：
+In `config/resnet18_baseline_wd01.yaml`, the `weight_decay` setting is modified as:
 
 ```yaml
 optimizer:
@@ -319,61 +323,61 @@ optimizer:
     amsgrad: False
 ```
 
-實驗結果如預期所示：模型在測試集上的準確率下降至 40.12%，低於原始設定的 44.26%。
+As expected, the model’s test accuracy drops to 40.12%, lower than the original 44.26%.
 
-這反映出一個常見現象：
+This reflects a common phenomenon:
 
-- 對於像 CIFAR-100 這類小型資料集而言，施加過強的正則化可能會壓抑模型在訓練階段對資料分布的充分擬合，導致模型尚未學會足夠區分性的特徵就過早收斂，最終影響泛化效果。
+- For small datasets like CIFAR-100, applying overly strong regularization may suppress the model’s ability to fit the training data distribution sufficiently, causing premature convergence before learning sufficiently discriminative features, ultimately harming generalization.
 
-## Label Smoothing：Acc=44.81%
+## Label Smoothing: Acc = 44.81%
 
-我們來試試看使用 Label Smoothing 的方式來改善模型的泛化能力。
+Next, we try using Label Smoothing to improve generalization.
 
-Label Smoothing 的基本概念是將每個類別的標籤從 one-hot 編碼轉換為一個平滑的分布，這樣可以減少模型對訓練資料的過度擬合。
+Label Smoothing basically transforms the one-hot label vectors into smoothed distributions, which reduces overfitting to the training labels.
 
-我們使用 `config/resnet18_baseline_lbsmooth.yaml` 來配置這個模型：
+We configure this model using `config/resnet18_baseline_lbsmooth.yaml`.
 
-使用方式很簡單，只需要在損失函數中加入 `label_smoothing` 的參數即可。
+The usage is straightforward, just add the `label_smoothing` parameter in the loss function:
 
 ```python
 loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 ```
 
-實驗結果顯示，模型在第 59 個 epoch 時，test-set 的準確率達到了 44.81%，比之前的 44.26% 有所提升之外，也提早 100 多個 epoch 達到這個準確率。
+The experiment shows the model reaches 44.81% test accuracy at epoch 59, which not only surpasses the previous 44.26% but also achieves this accuracy more than 100 epochs earlier.
 
-這顯示出 Label Smoothing 在這個任務上能有效減少模型對訓練資料的過度擬合，並提升泛化能力。
+This indicates Label Smoothing effectively reduces overfitting on this task and improves generalization.
 
-## 終究還是資料不足
+## Ultimately, It’s Still a Data Problem
 
-實驗進行到這裡，我們大致可以得到一個現實的結論：
+At this point, we can draw a realistic conclusion:
 
-> **有些問題，光靠模型設計或超參數微調是解決不了的。**
+> **Some problems cannot be solved by model design or hyperparameter tuning alone.**
 
-以 CIFAR-100 為例：雖然樣本數不少，但解析度低、語意訊息稀薄，每個類別的樣本數也有限。這樣的資料特性，使模型難以學得具泛化能力的判別特徵。
+Take CIFAR-100 as an example: although it has a decent number of samples, the low resolution and sparse semantic information, combined with limited samples per class, make it hard for the model to learn robust discriminative features.
 
-從實務角度看，最直接的解法就是：**增加資料**。
+From a practical perspective, the most direct solution is: **more data**.
 
-然而，資料蒐集往往是一項高成本工程。
+However, data collection is often costly.
 
-在許多應用場景中，資料難以取得，標註又費時費力，這早已成為深度學習落地的核心瓶頸之一。
+In many real-world scenarios, data acquisition is difficult, and annotation is time-consuming and labor-intensive — a core bottleneck for deep learning deployment.
 
-因此，實務界更常見也更務實的選擇是：**遷移學習（Transfer Learning）**。
+Thus, a more common and pragmatic choice is: **Transfer Learning**.
 
-透過遷移學習，我們不必從零開始訓練模型，而是善用在大規模資料集（如 ImageNet）上預訓練的模型作為 backbone，接著在目標任務上進行微調（fine-tune）。
+With transfer learning, we don’t train the model from scratch but leverage models pretrained on large datasets (e.g., ImageNet) as backbones, then fine-tune them on the target task.
 
-這樣的策略具備多重優勢：
+This strategy offers several advantages:
 
-- **加速收斂**：初始權重已蘊含語意特徵，模型可更快找到學習方向
-- **提升表現**：即使目標資料有限，亦能充分利用通用表示
-- **降低過擬合**：預訓練模型為訓練提供穩定起點，泛化效果更佳
+- **Faster Convergence**: Initial weights already contain semantic features, so the model finds the learning direction faster.
+- **Better Performance**: Even with limited target data, it fully exploits universal representations.
+- **Reduced Overfitting**: Pretrained models provide a stable starting point, improving generalization.
 
-於是我們接下來就使用 `timm` 提供的預訓練模型來實際測試看看。
+Next, we will test using pretrained backbones provided by `timm`.
 
-## 預訓練權重：Acc = 56.70%
+## Pretrained Weights: Acc = 56.70%
 
-延續 Baseline 的設定，暫時不使用 `label_smoothing` 或其他正則化技巧，專注於 backbone 的預訓練權重。
+Continuing from the baseline setup, we temporarily do not use label smoothing or other regularization techniques, focusing on backbone pretrained weights.
 
-這次我們使用 `resnet18_pretrained.yaml` 作為設定檔，主要調整的是 backbone 的部分，將 `pretrained` 選項設為 `True`，以啟用來自 ImageNet 的預訓練權重。
+We use `resnet18_pretrained.yaml` as the config, mainly adjusting the backbone part by setting `pretrained` to `True` to enable ImageNet pretrained weights.
 
 ```yaml
 model:
@@ -390,65 +394,65 @@ model:
       num_classes: 100
 ```
 
-在第 112 個 epoch 時，模型於 test set 上達到 56.70% 的準確率，相比原本的 44.26%，提升了 **12.44%**。
+At epoch 112, the model reaches 56.70% test accuracy, improving by **12.44%** compared to the original 44.26%.
 
-可說是效果顯著，比剛才所有調參的技巧都來得有用得多！
+This is a significant boost, much more effective than previous tuning tricks!
 
-不過，遷移學習也非萬能。當預訓練資料與目標任務之間差異過大時，模型不僅可能無法有效遷移，甚至會產生所謂的「**負遷移（Negative Transfer）**」。例如，將影像預訓練模型應用於自然語言任務，幾乎無法發揮正面效益。
+However, transfer learning is not a panacea. When the pretrained data domain and target task differ too much, the model may fail to transfer effectively or even suffer from **negative transfer**. For example, applying image pretrained models directly to natural language tasks rarely yields positive effects.
 
-但在我們這個例子中，CIFAR-100 屬於標準的影像分類任務，與 ImageNet 的語境相近，遷移學習的效果自然也表現得相當理想。
+In our case, CIFAR-100 is a standard image classification task similar in context to ImageNet, so transfer learning naturally works well.
 
-## Margin Loss：Acc = 57.92%
+## Margin Loss: Acc = 57.92%
 
-事情進展到這裡，我們解題的策略得換個方向。
+At this stage, we need to change our strategy.
 
-如果單純依靠現有的 cross-entropy 損失函數已無法進一步提升準確率，也許可以嘗試**主動增加訓練難度**，迫使模型學習更具區別性的特徵表示。而這正是 Margin Loss 所要處理的議題。
+If relying solely on the standard cross-entropy loss can no longer improve accuracy, we can try **actively increasing the training difficulty** to force the model to learn more discriminative feature representations. This is exactly what Margin Loss addresses.
 
-### 為什麼要 Margin？
+### Why Margin?
 
-在傳統分類任務中，cross-entropy 損失會鼓勵模型將正確類別的 logit 分數拉高，但**並不會強制要求它與其他錯誤類別分數之間有足夠的間距（margin）**。換句話說，只要正確答案最高就行，不管高多少。
+In traditional classification, cross-entropy loss encourages the model to increase the logit score of the correct class, but **does not explicitly enforce a sufficient margin between the correct class score and incorrect ones**. In other words, as long as the correct class has the highest score, it’s acceptable—no matter by how much.
 
-這樣的設計雖然足以完成分類任務，但在樣本分佈接近、資料雜訊大或類別間相似度高的情況下，往往會導致模型的判斷邊界模糊，泛化能力不穩定。
+While this is enough for classification, when samples have close distributions, noisy data, or high inter-class similarity, the model’s decision boundaries can become ambiguous, leading to unstable generalization.
 
-Margin Loss 就是為了解決這個問題而設計：
+Margin Loss is designed to solve this problem:
 
-> **不只要對，還要對得很有把握。**
+> **Not only must the prediction be correct, it must be confidently correct.**
 
-### Margin Loss 是什麼？
+### What is Margin Loss?
 
-Margin Loss 的基本精神是：
+The core idea of Margin Loss is:
 
-> **在 logit space 或特徵空間中，拉大正負樣本之間的距離，縮小同類樣本間的內部變異。**
+> **To enlarge the distance between positive and negative samples in the logit or feature space, while reducing intra-class variance.**
 
-常見的 Margin Loss 包括：
+Common margin losses include:
 
 - **Large Margin Softmax (L-Softmax)**
 - **ArcFace / CosFace / SphereFace**
 - **Triplet Loss / Contrastive Loss**
 
-這些方法多半會在 softmax 前加入一個角度或幅度的 margin，使模型學到的 embedding 在特徵空間中有更清晰的分類界線。以下是以角度 margin 為例的概念圖：
+These methods usually add an angular or magnitude margin before softmax, so the learned embeddings have clearer class boundaries in feature space. Below is a conceptual illustration of angular margin:
 
 ![margin_loss](./img/margin_loss.jpg)
 
-圖中可以看到，Margin Loss 會將同一類的特徵拉得更緊，類別之間的邊界拉得更遠，提升分類的信心與穩定性。
+The diagram shows Margin Loss pulling same-class features closer and pushing different classes farther apart, improving classification confidence and stability.
 
-### 與幾何空間的關係
+### Relation to Geometric Space
 
-在實作這類損失函數時，經常會將特徵投影到單位超球面上，也就是將 embedding 向量進行 L2 normalization，並強制其分佈在半徑為 1 的球面上。
+In practice, these losses often project features onto a unit hypersphere via L2 normalization, forcing embeddings to lie on a sphere with radius 1.
 
-這麼做有幾個好處：
+Benefits include:
 
-- **移除特徵長度的干擾，專注比較方向（角度）**
-- **便於控制 margin 對角度的影響**
-- **數學上可將分類任務轉換為角度分類問題**
+- **Eliminating feature magnitude interference, focusing on direction (angle)**
+- **Easier control of margin impact on angles**
+- **Mathematically reformulating classification as an angular classification problem**
 
-這也是為什麼許多基於 Margin 的方法，最後都是在 cosine similarity 的基礎上施加 margin，而非直接對 logit 值進行操作。
+Hence, many margin-based methods apply margins on cosine similarity rather than directly manipulating logits.
 
-### 實驗結果
+### Experimental Results
 
-同樣使用預訓練的 ResNet-18 作為 backbone，我們在 `config/resnet18_pretrained_arcface.yaml` 中加入 Margin Loss 的設定。
+Using pretrained ResNet-18 backbone, we incorporate Margin Loss in `config/resnet18_pretrained_arcface.yaml`.
 
-我們嘗試了兩個實作，`ArcFace` 和 `CosFace`，分別使用不同的 margin 設定。
+We test two implementations, `ArcFace` and `CosFace`, with different margin settings:
 
 ```python
 class ArcFace(nn.Module):
@@ -490,58 +494,60 @@ class CosFace(nn.Module):
         return logits
 ```
 
-做了幾次實驗後，發現兩者效果差異不大，但 ArcFace 的分數要略高一些。
+After several experiments, we find the two methods perform similarly, with ArcFace slightly better.
 
-所以我們最後報告了 ArcFace 的結果：在第 199 個 epoch 時，模型於 test set 上達到 57.92% 的準確率。比起一般的 Softmax 損失，提升了 1.22%。
+Thus, we report the ArcFace result: at epoch 199, the model achieves 57.92% accuracy on the test set — a 1.22% improvement over standard Softmax loss.
 
-這個結果顯示，Margin Loss 在提升模型的判別能力上確實有其價值，尤其在類別間相似度較高的情況下，能有效減少過擬合並提升泛化能力。
+This shows Margin Loss effectively enhances the model’s discriminative ability, especially when inter-class similarity is high, reducing overfitting and boosting generalization.
 
-## 輸入影像加大：Acc=79.57%
+## Enlarged Input Images: Acc = 79.57%
 
-保持 Margin Loss 的設定，我們接下來嘗試將輸入影像的尺寸加大，看看能否進一步提升模型的準確率。
+Keeping the Margin Loss settings, we next try increasing the input image size to see if it further improves accuracy.
 
-在 `config/resnet18_pretrained_arcface_224x224.yaml` 中，我們將 `image_size` 設定為 224：
+In `config/resnet18_pretrained_arcface_224x224.yaml`, we set `image_size` to 224:
 
 ```yaml
 global_settings:
   image_size: [224, 224]
 ```
 
-加大輸入影像的大小後，在 29 個 epoch 時，test-set 的準確率達到最高 79.57% 的準確度，比之前的 57.92% 提升了 **21.65%**。
+After enlarging the input images, the test accuracy peaks at 79.57% by epoch 29—an improvement of **21.65%** over the previous 57.92%.
 
-這個結果讓人驚訝：
+This result is surprising:
 
-- **明明只是把原本 $32 \times 32$ 的影像放大到 $224 \times 224$，卻能讓模型表現大幅提升？**
+- **Simply resizing the original $32 \times 32 $ images to $224 \times 224 $ greatly boosts model performance?**
 
-原因有幾個：
+There are several reasons:
 
-1. **解析度強行對齊預訓練習慣**
+1. **Resolution aligns with pretrained model expectations**
 
-   ResNet-50 與多數 ImageNet 模型在設計時，都是基於 $224 \times 224$ 進行預訓練。也因此，若直接餵 $32 \times 32$，這些卷積核幾乎「一眼看穿」整張圖，導致層級特徵表徵被壓縮，難以分辨細節。將解析度放大後，卷積層得以在更合理的視野大小內逐層萃取紋理與局部結構。
+   ResNet-50 and most ImageNet models are pretrained on $224 \times 224 $ images. Feeding in $32 \times 32 $ images means convolutional kernels “see” almost the whole image at once, compressing hierarchical features and limiting detail discrimination. Enlarging input lets convolution layers extract textures and local structures at more reasonable receptive fields.
 
-2. **空間取樣點數暴增**
+2. **Dramatic increase in spatial samples**
 
-   $32^2$ → $224^2$，像素數提升 **49 倍**。即使中間經過雙線性插值帶來平滑，模型仍可捕捉到更多邊緣、紋理與顏色分布，增強判別信號。
+   From $32^2 $ to $224^2 $, pixel count increases **49 times**. Despite bilinear interpolation smoothing, the model captures more edges, textures, and color distributions, strengthening discriminative signals.
 
-3. **避免早期訊號失真與混疊（aliasing）**
+3. **Avoid early signal distortion and aliasing**
 
-   在低解析度下，物體細節經多層 stride / pooling 後容易被卷積核平均掉；放大影像則讓關鍵特徵在下採樣前仍保有辨識度。同時，較高解析度可減少卷積步幅對高頻訊號的不當折疊，保持特徵穩定性。
+   At low resolutions, object details easily get averaged out by multiple stride/pooling layers; larger images preserve key features before downsampling. Higher resolution also reduces improper folding of high-frequency signals by convolution strides, maintaining feature stability.
 
 ---
 
-雖然準確度有明顯地提高，但是我們可以看出其中仍有一些問題。
+Although accuracy significantly improves, some issues remain.
 
-首先，計算量大幅增加，訓練時間從原本的 3 分鐘左右，變成大約 2 小時（基於 RTX 4090）。
+First, computation dramatically increases: training time jumps from \~3 minutes to \~2 hours (on RTX 4090).
 
-其次，模型在前 30 個 epoch 就達到約 80% 的準確率，這表示模型在訓練初期就已經學到了大部分的特徵，但後續的提升幅度卻不大，這可能是因為該資料集的資訊差不多就這樣了，後續幾百個 epoch 的訓練無法再找出更有價值的資訊。
+Second, the model reaches \~80% accuracy within the first 30 epochs, meaning it learns most features early, with little gain afterward—indicating dataset information saturation, limiting further learning despite extended training.
 
-## 模型加大：Acc = 61.76%
+## Larger Model Capacity: Acc = 61.76%
 
-那如果我們不改變輸入影像的大小，而是改變模型的容量呢？
+What if we keep input image size fixed but increase model capacity?
 
-一般來說，模型容量越大，理論上能學到的特徵也越多，但同時也更容易過擬合。
+Generally, larger models can learn more features but risk overfitting.
 
-我們剛才引入了 Margin Loss，過擬合的風險應該會降低一些，因此我們可以嘗試將模型容量加大。這裡我們使用 `resnet50_pretrained_arcface.yaml` 作為設定檔，將 backbone 改為 ResNet-50，同時輸入影像大小仍然保持在 32x32。
+Since Margin Loss reduces overfitting risk, we can try increasing model size.
+
+Here, we use `resnet50_pretrained_arcface.yaml`, switching backbone to ResNet-50, while input size remains $32 \times 32 $:
 
 ```yaml
 model:
@@ -559,64 +565,68 @@ model:
       num_classes: 100
 ```
 
-訓練結果顯示，模型在第 199 個 epoch 時，test-set 的準確率達到了 61.76%，比之前的 57.92% 提升了 3.84%。而代價是增加近一倍的參數量。
+Training results show test accuracy of 61.76% at epoch 199, an increase of 3.84% over 57.92%, at the cost of nearly doubling parameter count.
 
-這告訴我們，當輸入尺寸無法調整時，增加模型容量仍然能有效提升性能，尤其在使用 Margin Loss 的情況下，模型能更好地學習到類別間的邊界。
+This shows that when input size can’t be increased, boosting model capacity still improves performance, especially combined with Margin Loss, which helps the model better learn class boundaries.
 
-## 輸入影像加大：Acc=81.21%
+## Enlarged Input + Larger Model: Acc = 81.21%
 
-最後，我們同時加大模型與輸入影像的尺寸，看看能否達到更好的效果。
+Finally, we increase both model capacity and input image size to see if we can gain more.
 
-在 `config/resnet50_pretrained_arcface_224x224.yaml` 中，我們將 `image_size` 設定為 224：
+In `config/resnet50_pretrained_arcface_224x224.yaml`, we set:
 
 ```yaml
 global_settings:
   image_size: [224, 224]
 ```
 
-加大輸入影像的大小後，模型在前五個 epoch 時就達到 80% 以上的準確度，最後是在 174 個 epoch 時，test-set 的準確率達到最高 81.21% 的準確率。
+With larger input, the model reaches over 80% accuracy within 5 epochs and peaks at 81.21% at epoch 174.
 
-結果跟之前的 ResNet-18 + 224x224 的結果相當接近，但參數量卻增加了近一倍。顯然這個資料集已經達到某種飽和點，模型容量的提升，都無法再帶來顯著的性能增益。
+This result is close to ResNet-18 + 224x224’s, but with nearly double the parameters.
 
-## 知識蒸餾：Acc=57.37%
+Clearly, the dataset has saturated, and increasing model capacity no longer yields significant gains.
 
-在維持 ResNet-18 與 $32 \times 32$ 輸入尺寸的前提下，若需進一步提升效能，可採用知識蒸餾（KD）框架，將大型教師模型在高解析度下學得的判別能力，轉移至輕量學生模型。
+## Knowledge Distillation: Acc = 57.37%
 
-其核心思想是：藉由大型模型（Teacher）在訓練階段所學得的判別知識，輔助小型模型（Student）進行學習，進而提升其泛化能力與收斂效率。
+Maintaining ResNet-18 with $32 \times 32 $ inputs, to further improve performance we apply Knowledge Distillation (KD).
 
-與傳統的監督學習不同，知識蒸餾並不僅依賴真實標籤（hard labels），而是同時引入教師模型所產生的機率分布（soft labels）作為額外的監督訊號。這些 soft labels 提供了類別間的相對關係資訊，能夠引導學生模型學習更具區辨性的特徵空間。
+The core idea: transfer the discriminative ability learned by a large teacher model at high resolution to a lightweight student model.
 
-蒸餾損失的定義如下：
+Unlike traditional supervised learning relying only on hard labels, KD incorporates the teacher’s soft probability outputs as extra supervision. These soft labels encode inter-class relationships, guiding the student to learn a more discriminative feature space.
+
+Distillation loss is defined as:
 
 $$
 \mathcal{L}_{\text{distill}} = (1 - \alpha)\,\mathcal{L}_{\text{CE}}(y, p_s) + \alpha T^2 \cdot \mathrm{KL}(p_t^{(T)} \,||\, p_s^{(T)})
 $$
 
-- $\mathcal{L}_{\text{CE}}$：學生模型對真實標籤的 cross-entropy。
-- $\mathrm{KL}$：教師與學生在 softmax 溫度 $T$ 下的機率分布間之 Kullback–Leibler 散度。
-- $\alpha$：調節真實標籤與蒸餾信號的比例（常見設為 0.5–0.9）。
-- $T$：溫度參數，放大 logits，以強化非主類別的差異資訊。
+- $\mathcal{L} \_{\text{CE}} $: cross-entropy between student predictions and true labels.
+- $\mathrm{KL} $: Kullback–Leibler divergence between teacher and student softmax outputs at temperature $T $.
+- $\alpha $: balancing factor between true labels and distillation signal (commonly 0.5–0.9).
+- $T $: temperature parameter to soften logits, emphasizing non-main-class differences.
 
 ---
 
-在本實驗中，我們以預先於 224 × 224 輸入上訓練完成的 ResNet-50 作為教師模型，並將學生模型設定為 ResNet-18，輸入維持在 CIFAR-100 的原始尺寸 32 × 32。教師模型於訓練期間處於 frozen 狀態，不參與反向傳播，僅提供軟標籤作為輔助監督。
+In this experiment, a pretrained ResNet-50 trained on $224 \times 224 $ images serves as the teacher; the student is ResNet-18 with $32 \times 32 $ input.
 
-訓練架構與流程如下：
+The teacher model is frozen during training, only providing soft labels.
+
+Training pipeline:
 
 <div align="center">
     <img src="./img/teacher_student.jpg" width="60%">
 </div>
 
-1. 預先訓練教師模型，取得其 logit 輸出。
-2. 對教師與學生模型的 logit 分別施加 softmax with temperature，得到軟標籤。
-3. 使用 KD loss 作為損失函數，訓練學生模型。
-4. 最終部署時，僅保留學生模型，無需教師參與。
+1. Pretrain teacher model to obtain logits.
+2. Apply temperature-scaled softmax to teacher and student logits to produce soft labels.
+3. Train student with KD loss combining hard labels and distillation.
+4. Deploy only the student model; no teacher needed at inference.
 
-### 實驗結果
+### Experimental Results
 
-在 `config/resnet18_pretrained_arcface_kd.yaml` 中，我們設定了知識蒸餾的相關參數：
+In `config/resnet18_pretrained_arcface_kd.yaml`, we set the parameters for knowledge distillation:
 
-首先我們載入已經訓練好的 ResNet-50，且基於 224 x 224 的輸入尺寸的模型作為教師模型：
+First, we load a pretrained ResNet-50 model based on 224 × 224 input size as the teacher:
 
 ```yaml
 common:
@@ -628,50 +638,52 @@ common:
   preview_batch: 1000
 ```
 
-結果顯示效果和原本 Margin Loss 的結果差不多，test-set 的準確率約 57.37%。
+The results show similar performance to the original Margin Loss baseline, with test accuracy around 57.37%.
 
-可以說教師模型在這個地分並沒有如我們預期的那麼有用。
+This indicates that the teacher model was not as helpful in this setting as we had expected.
 
-這裡分析一下可能的原因：
+Possible reasons include:
 
-1. **模型表達能力不足**：ResNet-18 的表示空間本來就遠小於 ResNet-50，再加上蒸餾的是高精度老師的邊界決策，可能壓力太大，學生無法模擬老師那麼細緻的決策邊界。
+1. **Insufficient student model capacity**: ResNet-18’s representation space is much smaller than ResNet-50’s; distilling the fine-grained decision boundaries of a high-accuracy teacher may be too challenging for the student to mimic.
 
-2. **輸入資料尺寸**：教師模型在 224 × 224 上訓練，而學生模型僅在 32 × 32 上學習，這樣的解析度差異可能導致學生無法充分捕捉到教師模型所學的特徵。
+2. **Input resolution mismatch**: The teacher model was trained on 224 × 224 inputs, while the student uses only 32 × 32 images. This difference in resolution likely prevents the student from fully capturing the features learned by the teacher.
 
-當然可能還有其他原因，不過這是我們認為最主要的兩個。
+There may be other reasons, but these two are the primary hypotheses.
 
-## 實驗與結果總覽
+## Summary of Experiments and Results
 
-以下以表格方式整理各實驗設定及其最終在 CIFAR-100 測試集上的準確率：
+Below is a table summarizing each experiment’s configuration and the final test accuracy on CIFAR-100:
 
-| 配置檔案                                   | 設定說明                                                         | Accuracy |
-| ------------------------------------------ | ---------------------------------------------------------------- | -------- |
-| `resnet18_baseline.yaml`                   | ResNet-18，無預訓練，AdamW (lr=0.001)，WD=0.0001                 | 44.26%   |
-| `resnet18_augment.yaml`                    | 加入 Albumentations 資料增強（旋轉、遮罩、翻轉等）               | 36.48%   |
-| `resnet18_baseline_wd01.yaml`              | ResNet-18，無預訓練，Weight Decay 設為 0.1                       | 40.12%   |
-| `resnet18_baseline_lbsmooth.yaml`          | ResNet-18，無預訓練，Label Smoothing=0.1                         | 44.81%   |
-| `resnet18_pretrained.yaml`                 | ResNet-18，**使用 ImageNet 預訓練**                              | 56.70%   |
-| `resnet18_pretrained_arcface.yaml`         | ResNet-18 預訓練 + Margin Loss (ArcFace)                         | 57.92%   |
-| `resnet18_pretrained_arcface_224x224.yaml` | ResNet-18 預訓練 + Margin Loss，輸入影像放大至 224×224           | 79.57%   |
-| `resnet50_pretrained_arcface.yaml`         | ResNet-50 預訓練 + Margin Loss，輸入影像仍為 32×32               | 61.76%   |
-| `resnet50_pretrained_arcface_224x224.yaml` | ResNet-50 預訓練 + Margin Loss，224×224 輸入                     | 81.21%   |
-| `resnet18_pretrained_arcface_kd.yaml`      | 知識蒸餾（Teacher: ResNet-50 224×224；Student: ResNet-18 32×32） | 57.37%   |
+| Config File                                | Description                                                                   | Accuracy |
+| ------------------------------------------ | ----------------------------------------------------------------------------- | -------- |
+| `resnet18_baseline.yaml`                   | ResNet-18, no pretraining, AdamW (lr=0.001), WD=0.0001                        | 44.26%   |
+| `resnet18_augment.yaml`                    | Added Albumentations data augmentation (rotation, dropout, flips)             | 36.48%   |
+| `resnet18_baseline_wd01.yaml`              | ResNet-18, no pretraining, Weight Decay set to 0.1                            | 40.12%   |
+| `resnet18_baseline_lbsmooth.yaml`          | ResNet-18, no pretraining, Label Smoothing = 0.1                              | 44.81%   |
+| `resnet18_pretrained.yaml`                 | ResNet-18, **ImageNet pretrained**                                            | 56.70%   |
+| `resnet18_pretrained_arcface.yaml`         | ResNet-18 pretrained + Margin Loss (ArcFace)                                  | 57.92%   |
+| `resnet18_pretrained_arcface_224x224.yaml` | ResNet-18 pretrained + Margin Loss, input image resized to 224×224            | 79.57%   |
+| `resnet50_pretrained_arcface.yaml`         | ResNet-50 pretrained + Margin Loss, input remains 32×32                       | 61.76%   |
+| `resnet50_pretrained_arcface_224x224.yaml` | ResNet-50 pretrained + Margin Loss, input image 224×224                       | 81.21%   |
+| `resnet18_pretrained_arcface_kd.yaml`      | Knowledge Distillation (Teacher: ResNet-50 224×224; Student: ResNet-18 32×32) | 57.37%   |
 
-## 還有更多
+## More to Explore
 
-以上我們集中在基於 Resnet18 的實驗，並固定輸入影像大小為 32x32。
+So far, we focused on ResNet-18 experiments with fixed input size of 32×32.
 
-但要提高資料集的準確率並非只有這些方法。事實上，在 [Paper with Code](https://paperswithcode.com/sota/image-classification-on-cifar-100) 的排行榜上，CIFAR-100 的最佳結果已經達到 96% 以上。
+However, improving CIFAR-100 accuracy is not limited to these methods. In fact, on [Paper with Code’s leaderboard](https://paperswithcode.com/sota/image-classification-on-cifar-100), the best results have surpassed 96%.
 
-這些模型大多結合了如下幾種策略：
+Such top-performing models typically combine:
 
-- 使用大型 ViT 架構或自訂設計的 CNN 網路
-- 高解析度輸入
-- 預訓練遷移學習與資料增強策略（如 RandAugment、MixUp、CutMix）
-- 更長週期的訓練，搭配 Cosine Annealing 或 One-Cycle 策略
-- 使用 Label Smoothing、Sharpness-Aware Minimization 等新式正則化技術
-- 多模型蒸餾與 ensemble 技術進行最終推論
+- Large ViT architectures or custom CNN designs
+- High-resolution inputs
+- Pretrained transfer learning and advanced data augmentations (e.g., RandAugment, MixUp, CutMix)
+- Longer training schedules with Cosine Annealing or One-Cycle learning rate policies
+- Modern regularization techniques like Label Smoothing and Sharpness-Aware Minimization
+- Multi-model distillation and ensemble methods for final inference
 
-這些方法不一定適用於所有開發場景，特別是資源受限的部署環境，但它們提供了一個清楚的訊號：**性能的上限不僅來自模型本身，而是整個訓練策略的設計。**
+These approaches may not suit all development scenarios, especially resource-constrained deployments, but they clearly show:
 
-如果你也正在使用 CIFAR-100 做為訓練實驗的 playground，別忘了試試不同的架構與策略組合，持續驗證、持續精進。
+> **Performance ceilings come not only from the model architecture but also from the holistic training strategy design.**
+
+If you use CIFAR-100 as a training playground, don’t forget to try different architectures and strategy combinations, continuously validating and improving your results.
