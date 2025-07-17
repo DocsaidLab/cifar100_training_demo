@@ -515,17 +515,17 @@ After enlarging the input images, the test accuracy peaks at 79.57% by epoch 29�
 
 This result is surprising:
 
-- **Simply resizing the original $32 \times 32 $ images to $224 \times 224 $ greatly boosts model performance?**
+- **Simply resizing the original $32 \times 32$ images to $224 \times 224$ greatly boosts model performance?**
 
 There are several reasons:
 
 1. **Resolution aligns with pretrained model expectations**
 
-   ResNet-50 and most ImageNet models are pretrained on $224 \times 224 $ images. Feeding in $32 \times 32 $ images means convolutional kernels “see” almost the whole image at once, compressing hierarchical features and limiting detail discrimination. Enlarging input lets convolution layers extract textures and local structures at more reasonable receptive fields.
+   ResNet-50 and most ImageNet models are pretrained on $224 \times 224$ images. Feeding in $32 \times 32$ images means convolutional kernels “see” almost the whole image at once, compressing hierarchical features and limiting detail discrimination. Enlarging input lets convolution layers extract textures and local structures at more reasonable receptive fields.
 
 2. **Dramatic increase in spatial samples**
 
-   From $32^2 $ to $224^2 $, pixel count increases **49 times**. Despite bilinear interpolation smoothing, the model captures more edges, textures, and color distributions, strengthening discriminative signals.
+   From $32^2$ to $224^2$, pixel count increases **49 times**. Despite bilinear interpolation smoothing, the model captures more edges, textures, and color distributions, strengthening discriminative signals.
 
 3. **Avoid early signal distortion and aliasing**
 
@@ -547,7 +547,7 @@ Generally, larger models can learn more features but risk overfitting.
 
 Since Margin Loss reduces overfitting risk, we can try increasing model size.
 
-Here, we use `resnet50_pretrained_arcface.yaml`, switching backbone to ResNet-50, while input size remains $32 \times 32 $:
+Here, we use `resnet50_pretrained_arcface.yaml`, switching backbone to ResNet-50, while input size remains $32 \times 32$:
 
 ```yaml
 model:
@@ -588,7 +588,7 @@ Clearly, the dataset has saturated, and increasing model capacity no longer yiel
 
 ## Knowledge Distillation: Acc = 57.37%
 
-Maintaining ResNet-18 with $32 \times 32 $ inputs, to further improve performance we apply Knowledge Distillation (KD).
+Maintaining ResNet-18 with $32 \times 32$ inputs, to further improve performance we apply Knowledge Distillation (KD).
 
 The core idea: transfer the discriminative ability learned by a large teacher model at high resolution to a lightweight student model.
 
@@ -600,14 +600,16 @@ $$
 \mathcal{L}_{\text{distill}} = (1 - \alpha)\,\mathcal{L}_{\text{CE}}(y, p_s) + \alpha T^2 \cdot \mathrm{KL}(p_t^{(T)} \,||\, p_s^{(T)})
 $$
 
-- $\mathcal{L} \_{\text{CE}} $: cross-entropy between student predictions and true labels.
-- $\mathrm{KL} $: Kullback–Leibler divergence between teacher and student softmax outputs at temperature $T $.
-- $\alpha $: balancing factor between true labels and distillation signal (commonly 0.5–0.9).
-- $T $: temperature parameter to soften logits, emphasizing non-main-class differences.
+Where:
+
+- $\mathcal{L}_{\text{CE}}$: cross-entropy between student predictions and true labels.
+- $\mathrm{KL}$: Kullback–Leibler divergence between teacher and student softmax outputs at temperature $T$.
+- $\alpha$: balancing factor between true labels and distillation signal (commonly 0.5–0.9).
+- $T$: temperature parameter to soften logits, emphasizing non-main-class differences.
 
 ---
 
-In this experiment, a pretrained ResNet-50 trained on $224 \times 224 $ images serves as the teacher; the student is ResNet-18 with $32 \times 32 $ input.
+In this experiment, a pretrained ResNet-50 trained on $224 \times 224$ images serves as the teacher; the student is ResNet-18 with $32 \times 32$ input.
 
 The teacher model is frozen during training, only providing soft labels.
 
